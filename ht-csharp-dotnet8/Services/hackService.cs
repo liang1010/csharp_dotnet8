@@ -1,15 +1,26 @@
-﻿namespace ht_csharp_dotnet8.Services
+﻿using ht_csharp_dotnet8.Attributes;
+using ht_csharp_dotnet8.Entities;
+using ht_csharp_dotnet8.Models;
+
+namespace ht_csharp_dotnet8.Services
 {
     public interface IhackService
     {
-        Task<string> throwex();
+        Task<Response> throwex();
     }
-    public class hackService: IhackService
+    [ServiceDependencies]
+    public class hackService(IRepository<SystemConfig> _repo) : IhackService
     {
 
-        public async Task<string> throwex()
+        public async Task<Response> throwex()
         {
-            throw new Exception();
+            await _repo.AddAsync(new SystemConfig()
+            {
+                Code = "TSE1T",
+                Value = "asd"
+            });
+
+            return new Response();
         }
     }
 }
