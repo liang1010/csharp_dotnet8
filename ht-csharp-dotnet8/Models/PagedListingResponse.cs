@@ -6,10 +6,10 @@
         public int? PageSize { get; set; }
         public int TotalPages { get; set; }
         public int TotalRecords { get; set; }
-        public List<T>? Data { get; set; }
+        public List<T>? Result { get; set; }
         public PagedListingResponse()
         {
-            Data = new List<T>();
+            Result = new List<T>();
         }
     }
 }

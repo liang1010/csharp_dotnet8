@@ -11,5 +11,8 @@ namespace ht_csharp_dotnet8.Entities
         
         public DbSet<Log> Logs { get; set; }
         public DbSet<SystemConfig> SystemConfigs { get; set; }
+        public DbSet<Navigation> Navigations { get; set; }
+        public DbSet<NavigationRoles> NavigationRoles { get; set; }
+
     }
 }

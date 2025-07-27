@@ -8,6 +8,7 @@
 
 using ht_csharp_dotnet8.Entities;
 using ht_csharp_dotnet8.Extensions;
+using ht_csharp_dotnet8.Middlewares;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -81,16 +82,16 @@ if (app.Environment.IsDevelopment())
 // Catch thorw exception
 app.UseCustomExceptionHandler();
 
+app.UseCors(options =>
+{
+    options.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
+});
+
+app.UseMiddleware<HeaderCheckMiddleware>();
 app.UseHttpsRedirection();
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseCors(options => options
-                       .AllowAnyMethod()
-                       .AllowAnyHeader()
-                       .WithOrigins("*")
-                     );
 app.MapControllers();
 
 app.Run();

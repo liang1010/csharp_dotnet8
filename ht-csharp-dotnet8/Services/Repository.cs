@@ -141,15 +141,18 @@ namespace ht_csharp_dotnet8.Services
     //}
     public interface IRepository<T> where T : BaseEntity
     {
-        Task<T> GetByIdAsync(int id);
-        Task<IEnumerable<T>> GetAllAsync();
-        Task<IEnumerable<T>> Find(Expression<Func<T, bool>> expression);
+        Task<T> GetByIdAsync(Guid id);
+        Task<List<T>> GetAllAsync();
+        Task<List<T>> Find(Expression<Func<T, bool>> expression);
         Task AddAsync(T entity);
         Task EditAsync(T entity);
         Task AddRangeAsync(IEnumerable<T> entities);
-        Task RemoveAsync(int id);
+        Task RemoveAsync(Guid id);
         Task RemoveRangeAsync(IEnumerable<T> entities);
-        Task<PagedListingResponse<T>> GetPagedLisitng(PageListingRequest filter, Expression<Func<T, bool>> expression = null);
+        Task<PagedListingResponse<T>> GetPagedListing(
+     PageListingRequest filter,
+     Expression<Func<T, bool>> expression = null,
+     Func<IQueryable<T>, IQueryable<T>> include = null);
     }
 
     [ServiceDependencies]
@@ -168,9 +171,7 @@ namespace ht_csharp_dotnet8.Services
 
         public async Task AddAsync(T entity)
         {
-            entity.Status = Status.Active;
-            entity.LastUpdatedTime = DateTime.Now;
-            entity.LastUpdatedBy = "System";
+            SetAuditFields(entity);
             await _entities.AddAsync(entity);
             await _context.SaveChangesAsync();
 
@@ -206,7 +207,7 @@ namespace ht_csharp_dotnet8.Services
             _logger.LogWarning($"Add Range Async : {JsonSerializer.Serialize(entities)}");
         }
 
-        public async Task RemoveAsync(int id)
+        public async Task RemoveAsync(Guid id)
         {
             var entity = await GetByIdAsync(id);
             _entities.Remove(entity);
@@ -223,55 +224,128 @@ namespace ht_csharp_dotnet8.Services
             _logger.LogWarning($"Remove Range : {JsonSerializer.Serialize(entities)}");
         }
 
-        public async Task<IEnumerable<T>> Find(Expression<Func<T, bool>> expression)
+        public async Task<List<T>> Find(Expression<Func<T, bool>> expression)
         {
-            return await _entities.Where(expression).ToListAsync();
+            return await _entities.Where(expression).AsNoTracking().ToListAsync();
         }
 
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async Task<List<T>> GetAllAsync()
         {
             return await _entities.ToListAsync();
         }
 
-        public async Task<T> GetByIdAsync(int id)
+        public async Task<T> GetByIdAsync(Guid id)
         {
             return await _entities.Where(s => s.Id == id).AsNoTracking().FirstOrDefaultAsync();
         }
 
-        public async Task<PagedListingResponse<T>> GetPagedLisitng(PageListingRequest filter, Expression<Func<T, bool>> expression = null)
+        //public async Task<PagedListingResponse<T>> GetPagedLisitng(PageListingRequest filter, Expression<Func<T, bool>> expression = null)
+        //{
+        //    var validFilter = new PageListingRequest(filter.PageNumber, filter.PageSize);
+        //    List<T> pagedData;
+        //    int totalRecords;
+
+        //    if (expression != null)
+        //    {
+        //        pagedData = await _entities.Where(expression)
+        //            .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
+        //            .Take(validFilter.PageSize)
+        //            .ToListAsync();
+
+        //        totalRecords = await _entities.Where(expression).CountAsync();
+        //    }
+        //    else
+        //    {
+        //        pagedData = await _entities
+        //            .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
+        //            .Take(validFilter.PageSize)
+        //            .ToListAsync();
+
+        //        totalRecords = await _entities.CountAsync();
+        //    }
+
+        //    return new PagedListingResponse<T>
+        //    {
+        //        Result = pagedData,
+        //        PageNumber = validFilter.PageNumber,
+        //        PageSize = validFilter.PageSize,
+        //        TotalRecords = totalRecords,
+        //        TotalPages = (int)Math.Ceiling((double)totalRecords / validFilter.PageSize)
+        //    };
+        //}
+
+        public async Task<PagedListingResponse<T>> GetPagedListing(
+     PageListingRequest filter,
+     Expression<Func<T, bool>> expression = null,
+     Func<IQueryable<T>, IQueryable<T>> include = null)
         {
-            var validFilter = new PageListingRequest(filter.PageNumber, filter.PageSize);
-            List<T> pagedData;
-            int totalRecords;
+            var pageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+            var pageSize = filter.PageSize < 1 ? 10 : filter.PageSize;
+
+            IQueryable<T> query = _entities;
+
+            if (include != null)
+                query = include(query);
 
             if (expression != null)
-            {
-                pagedData = await _entities.Where(expression)
-                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
-                    .Take(validFilter.PageSize)
-                    .ToListAsync();
+                query = query.Where(expression);
 
-                totalRecords = await _entities.Where(expression).CountAsync();
-            }
-            else
-            {
-                pagedData = await _entities
-                    .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
-                    .Take(validFilter.PageSize)
-                    .ToListAsync();
+            var totalRecords = await query.CountAsync();
 
-                totalRecords = await _entities.CountAsync();
-            }
+            var pagedData = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
             return new PagedListingResponse<T>
             {
-                Data = pagedData,
-                PageNumber = validFilter.PageNumber,
-                PageSize = validFilter.PageSize,
+                Result = pagedData,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
                 TotalRecords = totalRecords,
-                TotalPages = (int)Math.Ceiling((double)totalRecords / validFilter.PageSize)
+                TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
             };
         }
+
+
+
+        private void SetAuditFields(object entity, string user = "System")
+        {
+            if (entity is not BaseEntity baseEntity) return;
+
+            var now = DateTime.Now;
+
+            if (baseEntity.LastUpdatedTime == default)
+            {
+                baseEntity.LastUpdatedTime = now;
+                baseEntity.LastUpdatedBy = user;
+            }
+
+            baseEntity.LastUpdatedTime = now;
+            baseEntity.LastUpdatedBy = user;
+            baseEntity.Status = Status.Active;
+
+            var type = entity.GetType();
+            var props = type.GetProperties();
+
+            foreach (var prop in props)
+            {
+                // 处理 IEnumerable<BaseEntity> 类型的集合属性
+                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) &&
+                    prop.PropertyType.IsGenericType &&
+                    typeof(BaseEntity).IsAssignableFrom(prop.PropertyType.GetGenericArguments()[0]))
+                {
+                    var children = prop.GetValue(entity) as System.Collections.IEnumerable;
+                    if (children == null) continue;
+
+                    foreach (var child in children)
+                    {
+                        SetAuditFields(child, user);
+                    }
+                }
+            }
+        }
+
     }
 
 }

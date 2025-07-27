@@ -53,7 +53,7 @@ namespace ht_csharp_dotnet8.Controller
 
                     await _userManager.UpdateAsync(user);
 
-                    return Ok(new Response<dynamic>(message:"Login Successful.")
+                    return Ok(new Response<dynamic>(message: "Login Successful.")
                     {
                         Data = new
                         {
@@ -63,14 +63,14 @@ namespace ht_csharp_dotnet8.Controller
                         }
                     });
                 }
-                return Unauthorized();
+                return StatusCode(StatusCodes.Status401Unauthorized, new Response { Status = HttpStatusCode.Unauthorized, Message = "Unauthorized" });
             }
             catch (Exception ex)
             {
                 // Log the exception using the logger
                 _logger.LogError(ex, "An exception occurred in SomeAction.");
                 // Handle the exception or return an error response as needed
-                return Unauthorized();
+                return StatusCode(StatusCodes.Status401Unauthorized, new Response { Status = HttpStatusCode.Unauthorized, Message = "Unauthorized" });
             }
         }
 
@@ -80,7 +80,7 @@ namespace ht_csharp_dotnet8.Controller
         {
             var userExists = await _userManager.FindByNameAsync(model.Username);
             if (userExists != null)
-                return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = HttpStatusCode.BadRequest, Message = "User already exists!" });
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "User already exists!" });
 
             ApplicationUser user = new()
             {
@@ -101,7 +101,7 @@ namespace ht_csharp_dotnet8.Controller
         {
             var userExists = await _userManager.FindByNameAsync(model.Username);
             if (userExists != null)
-                return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = HttpStatusCode.BadRequest, Message = "User already exists!" });
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "User already exists!" });
 
             ApplicationUser user = new()
             {
@@ -118,7 +118,7 @@ namespace ht_csharp_dotnet8.Controller
                     sb.Append(error.Description + " ");
                 }
 
-                return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = HttpStatusCode.BadRequest, Message = "User creation failed! Please check user details and try again. " + sb.ToString() });
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "User creation failed! Please check user details and try again. " + sb.ToString() });
             }
             if (!await _roleManager.RoleExistsAsync(UserRoles.Admin))
                 await _roleManager.CreateAsync(new ApplicationRole(UserRoles.Admin));
@@ -144,7 +144,7 @@ namespace ht_csharp_dotnet8.Controller
         {
             if (tokenModel is null)
             {
-                return BadRequest("Invalid client request");
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid client request" });
             }
 
             string? accessToken = tokenModel.AccessToken;
@@ -153,7 +153,7 @@ namespace ht_csharp_dotnet8.Controller
             var principal = GetPrincipalFromExpiredToken(accessToken);
             if (principal == null)
             {
-                return BadRequest("Invalid access token or refresh token");
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid access token or refresh token" });
             }
 
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -166,7 +166,7 @@ namespace ht_csharp_dotnet8.Controller
 
             if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
             {
-                return BadRequest("Invalid access token or refresh token");
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid access token or refresh token" });
             }
 
             var newAccessToken = CreateToken(principal.Claims.ToList());
@@ -174,12 +174,14 @@ namespace ht_csharp_dotnet8.Controller
 
             user.RefreshToken = newRefreshToken;
             await _userManager.UpdateAsync(user);
-
-            return Ok(new
+            return Ok(new Response<dynamic>(message: "Token Refresh Successful.")
             {
-                Token = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
-                RefreshToken = newRefreshToken,
-                Expiration = newAccessToken.ValidTo
+                Data = new
+                {
+                    Token = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
+                    RefreshToken = newRefreshToken,
+                    Expiration = newAccessToken.ValidTo
+                }
             });
         }
 
@@ -189,11 +191,13 @@ namespace ht_csharp_dotnet8.Controller
         public async Task<IActionResult> Revoke(string username)
         {
             var user = await _userManager.FindByNameAsync(username);
-            if (user == null) return BadRequest("Invalid user name");
+            if (user == null)
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid user name" });
 
             user.RefreshToken = null;
             await _userManager.UpdateAsync(user);
 
+            return Ok(new Response("Revoke Successful"));
             return NoContent();
         }
 
@@ -208,7 +212,7 @@ namespace ht_csharp_dotnet8.Controller
                 user.RefreshToken = null;
                 await _userManager.UpdateAsync(user);
             }
-
+            return Ok(new Response("Revoke Successful"));
             return NoContent();
         }
 

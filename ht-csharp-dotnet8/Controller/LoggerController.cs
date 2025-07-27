@@ -1,10 +1,12 @@
 ﻿using ht_csharp_dotnet8.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ht_csharp_dotnet8.Controller
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class LoggerController(IhackService hackService) : ControllerBase
     {
 
