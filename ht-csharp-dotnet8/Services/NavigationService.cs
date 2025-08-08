@@ -3,7 +3,6 @@ using ht_csharp_dotnet8.Entities;
 using ht_csharp_dotnet8.Helpers;
 using ht_csharp_dotnet8.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace ht_csharp_dotnet8.Services
 {

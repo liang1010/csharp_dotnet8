@@ -9,6 +9,7 @@
 using ht_csharp_dotnet8.Entities;
 using ht_csharp_dotnet8.Extensions;
 using ht_csharp_dotnet8.Middlewares;
+using ht_csharp_dotnet8.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -93,5 +94,11 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<IhackService>();
+    await dbContext.throwex();
+}
 
 app.Run();
