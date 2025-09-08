@@ -56,11 +56,12 @@ namespace ht_csharp_dotnet8.Services
             if (expression != null)
                 query = query.Where(expression);
 
-            var totalRecords = await query.CountAsync();
+            var totalRecords = await query.AsNoTracking().CountAsync();
 
             var pagedData = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .AsNoTracking()
                 .ToListAsync();
 
             return new PagedListingResponse<ApplicationRole>

@@ -150,9 +150,10 @@ namespace ht_csharp_dotnet8.Services
         Task RemoveAsync(Guid id);
         Task RemoveRangeAsync(IEnumerable<T> entities);
         Task<PagedListingResponse<T>> GetPagedListing(
-     PageListingRequest filter,
-     Expression<Func<T, bool>> expression = null,
-     Func<IQueryable<T>, IQueryable<T>> include = null);
+    PageListingRequest filter,
+    Expression<Func<T, bool>> expression = null,
+    Func<IQueryable<T>, IQueryable<T>> include = null,
+    Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null);
     }
 
     [ServiceDependencies]
@@ -231,7 +232,7 @@ namespace ht_csharp_dotnet8.Services
 
         public async Task<List<T>> GetAllAsync()
         {
-            return await _entities.ToListAsync();
+            return await _entities.AsNoTracking().ToListAsync();
         }
 
         public async Task<T> GetByIdAsync(Guid id)
@@ -275,9 +276,10 @@ namespace ht_csharp_dotnet8.Services
         //}
 
         public async Task<PagedListingResponse<T>> GetPagedListing(
-     PageListingRequest filter,
-     Expression<Func<T, bool>> expression = null,
-     Func<IQueryable<T>, IQueryable<T>> include = null)
+    PageListingRequest filter,
+    Expression<Func<T, bool>> expression = null,
+    Func<IQueryable<T>, IQueryable<T>> include = null,
+    Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null)
         {
             var pageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
             var pageSize = filter.PageSize < 1 ? 10 : filter.PageSize;
@@ -290,11 +292,16 @@ namespace ht_csharp_dotnet8.Services
             if (expression != null)
                 query = query.Where(expression);
 
-            var totalRecords = await query.CountAsync();
+            // ✅ Ordering
+            if (orderBy != null)
+                query = orderBy(query);
+
+            var totalRecords = await query.AsNoTracking().CountAsync();
 
             var pagedData = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .AsNoTracking()
                 .ToListAsync();
 
             return new PagedListingResponse<T>
@@ -306,6 +313,7 @@ namespace ht_csharp_dotnet8.Services
                 TotalPages = (int)Math.Ceiling((double)totalRecords / pageSize)
             };
         }
+
 
 
 

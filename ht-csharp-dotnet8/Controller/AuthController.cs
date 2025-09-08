@@ -144,7 +144,7 @@ namespace ht_csharp_dotnet8.Controller
         {
             if (tokenModel is null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid client request" });
+                return StatusCode(StatusCodes.Status401Unauthorized, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid client request" });
             }
 
             string? accessToken = tokenModel.AccessToken;
@@ -153,7 +153,7 @@ namespace ht_csharp_dotnet8.Controller
             var principal = GetPrincipalFromExpiredToken(accessToken);
             if (principal == null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid access token or refresh token" });
+                return StatusCode(StatusCodes.Status401Unauthorized, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid access token or refresh token" });
             }
 
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -166,7 +166,7 @@ namespace ht_csharp_dotnet8.Controller
 
             if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.Now)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid access token or refresh token" });
+                return StatusCode(StatusCodes.Status401Unauthorized, new Response { Status = HttpStatusCode.BadRequest, Message = "Invalid access token or refresh token" });
             }
 
             var newAccessToken = CreateToken(principal.Claims.ToList());

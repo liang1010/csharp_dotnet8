@@ -6,6 +6,7 @@ namespace ht_csharp_dotnet8.Entities
     public class BaseEntity
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("Id", Order = 0)]
         public Guid Id { get; set; }
         public string LastUpdatedBy { get; set; }

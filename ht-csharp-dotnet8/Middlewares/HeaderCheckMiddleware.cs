@@ -18,6 +18,13 @@ namespace ht_csharp_dotnet8.Middlewares
 
         public async Task InvokeAsync(HttpContext context)
         {
+            //// Skip Swagger endpoints
+            //if (context.Request.Path.StartsWithSegments("/swagger"))
+            //{
+            //    await _next(context);
+            //    return;
+            //}
+
             // 你想检查的 Header 名称
             const string headerKey = "X-Api-Key";
 

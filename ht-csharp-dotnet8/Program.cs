@@ -24,7 +24,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     {
         warning.Ignore(CoreEventId.RowLimitingOperationWithoutOrderByWarning);
     });
-    options.UseSqlServer(builder.Configuration.GetConnectionString("MainDb"), b => b.MigrationsAssembly("ht-csharp-dotnet8"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("MainDb"), b => b.MigrationsAssembly("ht-csharp-dotnet8")).EnableSensitiveDataLogging();
 });
 
 // For Identity
@@ -76,10 +76,10 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
 }
 
+app.UseSwagger();
+app.UseSwaggerUI();
 // Catch thorw exception
 app.UseCustomExceptionHandler();
 
@@ -98,6 +98,7 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<IhackService>();
+    //dbContext.Test();
     await dbContext.throwex();
 }
 
